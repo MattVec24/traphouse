@@ -4,20 +4,23 @@ const cors = require("cors");
 const { Pool } = require("pg");
 
 const app = express();
-const port = process.env.PORT || 3000; // ✅ Railway usa la variabile PORT
+
+// Railway assegna automaticamente la porta tramite la variabile PORT
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static("public")); // serve index.html, style.css, ecc.
+app.use(express.static("public")); // serve index.html, style.css, script.js, immagini ecc.
 
-// Config database (Railway fornisce DATABASE_URL)
-const pool = process.env.DATABASE_URL
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }, // richiesto da Railway
-    })
-  : null;
+// Configurazione Database (Railway fornisce DATABASE_URL)
+let pool = null;
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }, // necessario su Railway
+  });
+}
 
 // Endpoint registrazione email
 app.post("/register", async (req, res) => {
@@ -38,7 +41,20 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Avvio server
+// Endpoint per vedere tutte le email registrate
+app.get("/emails", async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(500).json({ message: "DB non configurato" });
+    }
+    const result = await pool.query("SELECT * FROM iscritti ORDER BY created_at DESC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Errore DB:", err);
+    res.status(500).json({ message: "Errore server" });
+  }
+});
+// Avvio del server
 app.listen(port, () => {
   console.log(`✅ Server attivo sulla porta ${port}`);
 });
