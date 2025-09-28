@@ -54,6 +54,47 @@ app.get("/emails", async (req, res) => {
     res.status(500).json({ message: "Errore server" });
   }
 });
+
+
+
+// /emails (JSON) — protetto
+app.get("/emails", async (req, res) => {
+  if (req.query.secret !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ message: "Accesso negato" });
+  }
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, email, created_at FROM iscritti ORDER BY created_at DESC"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Errore DB:", err);
+    res.status(500).json({ message: "Errore server" });
+  }
+});
+
+// /export (CSV) — protetto
+app.get("/export", async (req, res) => {
+  if (req.query.secret !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ message: "Accesso negato" });
+  }
+  try {
+    const { rows } = await pool.query(
+      "SELECT id, email, created_at FROM iscritti ORDER BY created_at DESC"
+    );
+    let csv = "id,email,created_at\n";
+    rows.forEach(r => {
+      csv += `${r.id},"${String(r.email).replace(/\"/g,'\"\"')}",${r.created_at.toISOString()}\n`;
+    });
+    res.header("Content-Type", "text/csv");
+    res.attachment("iscritti.csv");
+    res.send(csv);
+  } catch (err) {
+    console.error("Errore export:", err);
+    res.status(500).json({ message: "Errore server" });
+  }
+});
+
 // Avvio del server
 app.listen(port, () => {
   console.log(`✅ Server attivo sulla porta ${port}`);
