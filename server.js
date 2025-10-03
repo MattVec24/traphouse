@@ -4,7 +4,7 @@ const cors = require("cors");
 const { Pool } = require("pg");
 
 const app = express();
-const port = process.env.PORT || 3000; // Railway imposta PORT
+const port = process.env.PORT || 3000; // Railway imposta PORT automaticamente
 
 // Middleware
 app.use(cors());
@@ -35,9 +35,9 @@ app.post("/register", async (req, res) => {
   try {
     if (pool) {
       await pool.query(
-        "CREATE TABLE IF NOT EXISTS iscritti (id SERIAL PRIMARY KEY, email TEXT UNIQUE)"
+        "INSERT INTO iscritti(email) VALUES($1) ON CONFLICT DO NOTHING",
+        [email]
       );
-      await pool.query("INSERT INTO iscritti(email) VALUES($1) ON CONFLICT DO NOTHING", [email]);
     }
     res.json({ message: `Grazie! Sei registrato con ${email}` });
   } catch (err) {
