@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS iscritti;
+
+CREATE TABLE iscritti (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
